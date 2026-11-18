@@ -11,6 +11,30 @@
 - **Contact professionnel :** warlikeofficiel@gmail.com
 - **Administration des artistes :** [Procédure administrative](docs/ADMINISTRATIVE_WORKFLOW.md)
 
+## L'histoire du fondateur
+
+### De Kinshasa à la création d'un écosystème artistique
+
+Originaire de **Kinshasa, en République démocratique du Congo**, **Hardi MBANVU**, également connu sous le nom de **HardieBay**, développe un parcours transversal entre musique, écriture, création visuelle et développement de logiciels. Il compose, écrit, rappe, chante, produit des instrumentales et travaille également la guitare.
+
+Son approche artistique repose sur plusieurs identités créatives, qui ne sont pas de simples signatures promotionnelles. **HFlow** représente l'une de ses premières voix dans le rap. **CHAYAH VEHUIAH** incarne une expression vocale et musicale distincte. **Rich Ravi OTD (RROTD)** porte une facette d'écriture et de stratégie, associée à l'idée d'**« Ordre, Discipline, Travail »**. Derrière ces expressions, **HardieBay** conserve la direction de l'ensemble.
+
+Son projet d'EP **_MOON LIGHT_** illustre cette recherche d'un univers musical personnel : une même personne peut composer et interpréter selon différentes voix, chaque morceau appelant sa propre identité artistique. Il ne faut pas interpréter cette mention comme une annonce de sortie commerciale du projet.
+
+### Pourquoi WarLike Records ?
+
+À mesure que sa pratique musicale se développe, HardieBay entreprend également de construire ses propres outils de création, notamment **WarLike Studio**, pensé pour la composition, l'enregistrement, le mixage et la production musicale dans un environnement Web.
+
+**WarLike Records** prolonge cette démarche sous une forme collective : il ne s'agit plus seulement de produire ses propres œuvres, mais de diriger un label capable d'**accueillir, accompagner et développer d'autres artistes**. Le projet distingue clairement la liberté artistique des musiciens et la structure professionnelle chargée de les soutenir.
+
+Le portail WarLike Records doit servir de point de rencontre : **un label central, des artistes aux identités différentes et des sites individuels rattachés au groupe**. Les biographies, discographies, sorties et annonces officielles de chaque artiste seront publiées après validation.
+
+### Une ambition de long terme
+
+La vision de WarLike Records est de relier création et autonomie : développer les artistes, constituer un catalogue pérenne, documenter les droits, produire des œuvres de qualité et disposer d'outils numériques contrôlés par l'organisation.
+
+Cette histoire est celle d'un projet en construction. Elle ne revendique **ni palmarès, ni artistes déjà signés, ni contrats, ni succès commerciaux non documentés**.
+
 ## Vision
 
 WarLike Records a vocation à produire, accompagner et développer plusieurs artistes au sein du même label. Le portail central présente leur musique, leur actualité et les projets du label. Chaque artiste peut disposer d'un **sous-site ou d'un site dédié** avec ses propres photographies autorisées, sa biographie, son identité visuelle, ses sorties, ses clips et ses événements.
