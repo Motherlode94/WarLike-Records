@@ -59,6 +59,49 @@ node --test tests/private-operations.test.mjs
 
 Ces tests vérifient l'activation conditionnelle de l'API, la cryptographie des JWT et les calculs. Ils ne remplacent pas des tests d'intégration avec Cloudflare Access et D1.
 
+## Phase complémentaire : ressources créées et sécurité renforcée
+
+Au 18 novembre 2026, les ressources Cloudflare suivantes ont été créées **vides** et séparées des autres applications :
+
+- **Base D1 :** `warlike-records-private` (juridiction D1 configurée `eu`). Migrations `0001`, `0002` et `0003` appliquées ; aucun compte, artiste, contrat ou relevé ajouté.
+- **Bucket R2 :** `warlike-records-private-documents`, région de placement `WEUR`. **Attention : sa juridiction R2 est `default` ; le placement européen observé n'est pas à lui seul une garantie de résidence juridique européenne des données.** Vérifier les exigences de résidence avant tout document réel.
+- **Cloudflare Access / Zero Trust :** *non activé sur ce compte*. L'API a renvoyé `access.api.error.not_enabled`. L'installation doit être complétée et ses paramètres confirmés avant activation de tout compte.
+
+### Activation bloquante côté Cloudflare
+
+1. Activer Cloudflare Zero Trust dans le tableau de bord Cloudflare de ce compte, choisir la configuration requise et son équipe. Une étape utilisateur peut être nécessaire.
+2. Créer une application Access auto-hébergée qui protège **/admin.html** et **/api/admin/***, pour production et prévisualisations utilisées. Ajouter une politique explicitement limitée aux identités de l'équipe. Activer MFA selon le niveau de risque. Récupérer l'URL de l'équipe et l'audience de l'application.
+3. Configurer `ACCESS_TEAM_DOMAIN` et `ACCESS_AUD` dans l'environnement sécurisé de Cloudflare Pages, idéalement séparément pour production et Preview.
+4. Lier D1 sous le binding `RECORDS_DB` et R2 sous `RECORDS_DOCS`. Avant toute donnée personnelle, vérifier la juridiction du bucket, la confidentialité des objets et la politique de rétention.
+5. **Ensuite seulement**, créer dans `records_roles` un premier compte `director` correspondant à une identité Access confirmée. Ne pas attribuer automatiquement un rôle à une simple adresse Cloudflare ou GitHub.
+6. Effectuer un test anonyme, un test Access valide sans rôle, puis un test avec rôle ; vérifier chaque route, y compris la protection serveur de `admin.html`.
+7. Auditer la configuration RGPD, les conditions contractuelles, les sauvegardes, les accès et les coûts Cloudflare avant des documents réels.
+
+### Nouveau contrôle serveur de l'interface
+
+`functions/admin.html.js` intercepte l'accès à la page HTML : tant qu'Access, l'audience JWT, la base D1 et un rôle adapté ne sont pas présents, le HTML d'administration n'est pas servi. Cette protection complète, mais ne remplace pas, la politique Access en amont.
+
+### Cofre documentaire
+
+`functions/api/admin/document.js` prend en charge un PDF de 8 MiB au maximum pour un contrat déjà référencé, seulement pour les rôles `director` et `production`. Le fichier est identifié par un nom de clé opaque R2 et une empreinte SHA-256. Le téléchargement est servi en pièce jointe privée, après une seconde vérification de l'authentification et du rôle.
+
+Le dépôt n'est **ni une signature**, ni une preuve de validité du contrat. Des vérifications antivirales, des règles de conservation, un contrôle de confidentialité et une gestion de révocation restent nécessaires avant usage réel.
+
+### Approbation des royalties
+
+Les nouvelles colonnes `created_by`, `approved_by` et `approved_at` accompagnent un journal `records_royalty_events`. Seul le rôle `director` peut approuver un brouillon **créé par une autre identité autorisée**. La modification est conditionnelle et liée à un enregistrement d'audit.
+
+- **Draft** : calcul interne non validé.
+- **Approved** : validation interne par une deuxième personne.
+- **Paid** : aucun paiement n'est implémenté, et aucun bouton ne peut émettre une transaction bancaire.
+
+La formule actuelle reste indicative ; elle ne couvre pas les contrats complexes, les taxes et la comptabilité légale.
+
+### Signature électronique
+
+Le schéma `records_signature_evidence` prépare l'identifiant fournisseur, l'empreinte du PDF et la vérification des preuves. Aucun prestataire n'est connecté, aucun webhook fournisseur n'est accepté et **aucune opération ne peut passer en `completed_verified`**. Le choix d'un prestataire, la vérification des webhooks et de l'identité des signataires, le dossier de preuve et les modalités eIDAS doivent être validés avant activation.
+
+
 ## À développer ensuite
 
 - Autorisations précises par dossier et comptes artistes individuels.
