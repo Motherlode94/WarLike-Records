@@ -1,0 +1,29 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#120f14"><meta name="description" content="Artistes du label WarLike Records"><title>Artistes — WarLike Records</title>
+<style>
+:root{color-scheme:dark;font:16px/1.6 system-ui,Arial,sans-serif;background:#120f14;color:#f7f1ec}*{box-sizing:border-box}body{margin:0}a{color:#ecc18b;text-decoration:none}a:hover{text-decoration:underline}header{border-bottom:1px solid #51414b;padding:22px max(20px,calc((100vw - 1080px)/2))}main{max-width:1080px;margin:auto;padding:60px 22px 110px}.back{font-size:13px;text-transform:uppercase;letter-spacing:.12em}.kicker{color:#ecc18b;text-transform:uppercase;letter-spacing:.22em;font-size:12px;font-weight:700}h1{font-size:clamp(42px,8vw,100px);letter-spacing:-.06em;line-height:1;margin:16px 0}h2{font-size:32px;margin:60px 0 18px}p{max-width:700px;color:#c9bfc4}.hero{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,1fr);gap:55px;align-items:center;min-height:380px}.portrait{width:100%;max-height:450px;object-fit:cover;border:1px solid #51414b}.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}.links a{border:1px solid #846c72;padding:11px 15px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px}.release{border:1px solid #51414b;background:#211a22;padding:20px}.release img{width:100%;aspect-ratio:1;object-fit:cover}.release h3{margin:12px 0 0}.release small{color:#ecc18b}#missing{border:1px dashed #76626d;padding:35px;margin-top:40px}@media(max-width:680px){.hero{grid-template-columns:1fr;gap:22px}main{padding-top:35px}}a:focus-visible{outline:2px solid #ecc18b;outline-offset:4px}
+</style></head><body><header><a href="/" class="back">← WarLike Records / Artistes</a></header><main><div id="missing" hidden><h1>Profil indisponible</h1><p>Ce profil n'est pas publié ou n'existe pas dans le roster officiel.</p><a href="/#artistes">Revenir au roster</a></div><div id="profile" hidden><div class="hero"><div><div class="kicker">Artiste · WarLike Records</div><h1 id="artistName"></h1><div id="genre"></div><p id="bio"></p><div class="links" id="artistLinks"></div></div><div id="portrait"></div></div><section><h2>Discographie</h2><div class="grid" id="releases"></div><p id="noReleases">Aucune sortie officielle publiée pour le moment.</p></section></div></main>
+<script type="module">
+import {catalog,publishedArtists,publishedReleases,shortDate,image,text,externalLink} from './assets/records-data.js';
+const slug=new URLSearchParams(location.search).get('slug')||'';
+const [artists,releases]=await Promise.all([catalog('artists'),catalog('releases')]);
+const artist=publishedArtists(artists).find(x=>x.slug===slug);
+if(!artist){document.getElementById('missing').hidden=false}
+else{
+ document.getElementById('profile').hidden=false;
+ document.title=artist.name+' — WarLike Records';
+ document.getElementById('artistName').textContent=artist.name;
+ document.getElementById('genre').textContent=artist.genre||'';
+ document.getElementById('bio').textContent=artist.bio||'Biographie en préparation.';
+ const photo=image(artist.image,'Portrait de '+artist.name);if(photo){photo.className='portrait';document.getElementById('portrait').append(photo)}
+ const l=document.getElementById('artistLinks');
+ for(const [url,label] of [[artist.website,'Site officiel'],[artist.spotify,'Spotify'],[artist.youtube,'YouTube'],[artist.instagram,'Instagram']]){const a=externalLink(url,label);if(a)l.append(a)}
+ const grid=document.getElementById('releases');
+ for(const release of publishedReleases(releases).filter(x=>x.artistSlug===slug).sort((a,b)=>(b.date||'').localeCompare(a.date||''))){
+  const card=document.createElement('article');card.className='release';const artwork=image(release.cover,'Pochette de '+release.title);if(artwork)card.append(artwork);
+  card.append(text('small',[release.type.toUpperCase(),shortDate(release.date)].filter(Boolean).join(' · ')),text('h3',release.title));
+  const link=externalLink(release.link,'Écouter / voir');if(link)card.append(link);
+  grid.append(card);
+ }
+ document.getElementById('noReleases').hidden=grid.childElementCount>0;
+}
+</script></body></html>
