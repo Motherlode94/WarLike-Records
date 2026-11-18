@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+    branches: [main, feat/records-private-operations-20261118]
 jobs:
   secure-admin:
     runs-on: ubuntu-latest
