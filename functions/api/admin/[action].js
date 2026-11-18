@@ -1,10 +1,10 @@
 import {verifyAccessJwt,hasRole,assertConfigured} from '../../_lib/access.js';
+import {calculateRoyalties} from '../../_lib/royalties.js';
 const json=(payload,status=200)=>new Response(JSON.stringify(payload),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}});
 const deny=()=>json({error:'Accès refusé'},403);
 const visible=(role,roles)=>hasRole(role,roles);
 const str=(v,max=120)=>typeof v==='string'&&v.trim().length>0&&v.trim().length<=max?v.trim():null;
 const integer=(v,max)=>Number.isSafeInteger(v)&&v>=0&&v<=max;
-const royaltyAmount=(gross,deductions,points)=>Math.round((gross-deductions)*points/10000);
 const log=(db,actor,action,type,id)=>db.prepare('INSERT INTO records_audit (id,actor_email,action,object_type,object_id) VALUES (?,?,?,?,?)').bind(crypto.randomUUID(),actor,action,type,id);
 async function handler(context,method){
  const {request,env,params}=context;
@@ -82,7 +82,7 @@ async function handler(context,method){
    return json({error:'Montants, taux ou références invalides'},400);
   const artist=await db.prepare('SELECT id FROM records_artists WHERE id=?').bind(artistId).first();
   if(!artist)return json({error:'Artiste introuvable'},404);
-  const amount=royaltyAmount(gross,deductions,points),id=crypto.randomUUID();
+  const amount=calculateRoyalties(gross,deductions,points),id=crypto.randomUUID();
   await db.batch([
    db.prepare('INSERT INTO records_royalties (id,artist_id,reference,currency,gross_cents,permitted_deductions_cents,basis_points,payable_cents) VALUES (?,?,?,?,?,?,?,?)')
     .bind(id,artistId,reference,currency,gross,deductions,points,amount),
@@ -94,4 +94,3 @@ async function handler(context,method){
 }
 export const onRequestGet=context=>handler(context,'GET').catch(()=>json({error:'Erreur interne'},500));
 export const onRequestPost=context=>handler(context,'POST').catch(()=>json({error:'Erreur interne'},500));
-export const onRequest=context=>json({error:'Méthode non autorisée'},405);
