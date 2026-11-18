@@ -1,4 +1,4 @@
-import {verifyAccessJwt,hasRole,assertConfigured} from '../_lib/access.js';
+import {verifyAccessJwt,hasRole,assertConfigured} from '../../_lib/access.js';
 const json=(payload,status=200)=>new Response(JSON.stringify(payload),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}});
 const deny=()=>json({error:'Accès refusé'},403);
 const visible=(role,roles)=>hasRole(role,roles);
