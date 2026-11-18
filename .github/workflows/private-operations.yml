@@ -18,6 +18,7 @@ jobs:
           node --check functions/_lib/royalties.js
           node --check functions/_lib/approvals.js
           node --check functions/admin.html.js
+          node --check functions/api/admin/document.js
           node --check 'functions/api/admin/[action].js'
       - name: Authentication and royalty tests
-        run: node --test tests/private-operations.test.mjs tests/records-approvals.test.mjs
+        run: node --test tests/private-operations.test.mjs tests/records-approvals.test.mjs tests/private-documents.test.mjs
