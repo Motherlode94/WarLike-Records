@@ -47,11 +47,11 @@ Les sites d'artistes sont **rattachés au portail central**, sans devoir partage
 | --- | --- | --- |
 | Accueil | Présentation de WarLike Records et de sa vision | En ligne |
 | Label | Présentation du rôle du label : direction artistique, production et développement | En ligne |
-| Artistes | Roster public, profils et liens vers les sites individuels | En ligne, catalogue vide |
-| Sorties | Singles, EP, albums, clips, liens d'écoute et crédits | Présentation en ligne, catalogue à alimenter |
+| Artistes | Roster public, profils individuels, liens vers les sites indépendants | Fiches et moteur de publication ajoutés, catalogue vide |
+| Sorties | Singles, EP, albums, clips et liens d'écoute | Catalogue dynamique ajouté, aucune sortie publiée |
 | Rejoindre | Parcours de candidature et contact professionnel | Contact par e-mail disponible |
 | Administration | Dossiers privés, signature, échéances, droits et paiements | À développer |
-| Sous-sites d'artistes | Portfolios et discographies spécifiques aux artistes | Infrastructure à définir |
+| Sous-sites d'artistes | Fiches liées au portail + liens vers sites autonomes | Fiche publique dynamique ajoutée ; hébergement individuel à définir |
 
 ## Organisation du label
 
@@ -84,6 +84,20 @@ Voir [docs/ADMINISTRATIVE_WORKFLOW.md](docs/ADMINISTRATIVE_WORKFLOW.md) pour le 
 
 **Important :** contrats d'artiste-interprète, production phonographique, licence de masters, distribution et développement artistique ne sont pas interchangeables. Les modèles de documents sont des supports de préparation et doivent être adaptés et validés avant toute signature. Une publication du site ne vaut pas engagement contractuel.
 
+## Catalogue éditorial public — nouvelle architecture
+
+Le site dispose maintenant de trois fichiers **publics** : `artists.json` (artistes autorisés), `releases.json` (sorties approuvées) et `news.json` (actualités officielles). Aucun de ces fichiers ne contient de contrat ni de dossier privé.
+
+- **`artist.html?slug=<identifiant>`** : fiche du musicien, biographie autorisée, discographie, plateformes d'écoute et lien vers son site autonome HTTPS.
+- **`assets/records-data.js`** : chargement et validation minimale des données publiques, contrôle du champ `published`, neutralisation des URL non HTTPS et insertion des textes sans HTML dynamique.
+- **`tests/catalog-public.test.mjs`** : tests de non-publication des brouillons et du comportement des liens.
+- **`docs/PUBLISHING_ARTISTS.md`** : procédure de création des fiches artistes, de leurs sous-sites, des sorties et actualités.
+- **`.github/workflows/public-catalog.yml`** : tests Node sur pull request et changements de `main`.
+
+**Attention :** `published:false` empêche l'affichage dans l'interface, mais **ne sécurise pas une donnée stockée dans un JSON public**. Ne jamais placer d'information privée ou non autorisée dans ces fichiers, même en brouillon.
+
+Les trois catalogues de production restent volontairement vides tant que les contenus ne sont pas confirmés.
+
 ## Publication d'un artiste sur le site
 
 Le fichier `artists.json` contient uniquement des données **publiques et approuvées**. Par défaut, il contient un tableau vide.
@@ -113,7 +127,11 @@ Ce dépôt est actuellement un site statique autonome :
 ```text
 WarLike-Records/
 ├── index.html                       # Portail public responsive
+├── artist.html                       # Fiche publique individuelle
+├── assets/records-data.js             # Utilitaires de catalogue public
 ├── artists.json                     # Roster public validé
+├── releases.json                    # Sorties officielles validées
+├── news.json                        # Actualités officielles
 ├── docs/
 │   └── ADMINISTRATIVE_WORKFLOW.md   # Procédure de signature et de suivi
 └── README.md                        # Documentation du label et du site
