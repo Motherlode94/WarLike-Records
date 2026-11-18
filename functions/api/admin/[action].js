@@ -1,5 +1,6 @@
 import {verifyAccessJwt,hasRole,assertConfigured} from '../../_lib/access.js';
 import {calculateRoyalties} from '../../_lib/royalties.js';
+import {canApproveRoyalty,canCreateRoyalty} from '../../_lib/approvals.js';
 const json=(payload,status=200)=>new Response(JSON.stringify(payload),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer'}});
 const deny=()=>json({error:'Accès refusé'},403);
 const visible=(role,roles)=>hasRole(role,roles);
@@ -40,7 +41,7 @@ async function handler(context,method){
   }
   if(action==='royalties'){
    if(!visible(role,['director','finance']))return deny();
-   const result=await db.prepare('SELECT id,artist_id,reference,currency,gross_cents,permitted_deductions_cents,basis_points,payable_cents,status,created_at FROM records_royalties ORDER BY created_at DESC LIMIT 100').all();
+   const result=await db.prepare('SELECT id,artist_id,reference,currency,gross_cents,permitted_deductions_cents,basis_points,payable_cents,status,created_by,approved_by,created_at FROM records_royalties ORDER BY created_at DESC LIMIT 100').all();
    return json({items:result.results||[]});
   }
   return json({error:'Route inconnue'},404);
@@ -74,8 +75,26 @@ async function handler(context,method){
   // No e-signature provider configured: NEVER mark this draft as signed.
   return json({id,status:'draft',signature:'provider_not_configured'},201);
  }
+ if(action==='royalty-approve'){
+  if(role!=='director')return deny();
+  const id=str(data.id,80);if(!id)return json({error:'Identifiant invalide'},400);
+  const draft=await db.prepare('SELECT id,status,created_by FROM records_royalties WHERE id=?').bind(id).first();
+  if(!draft)return json({error:'Relevé introuvable'},404);
+  if(!canApproveRoyalty({role,actor:user.email,creator:draft.created_by,status:draft.status}))
+   return json({error:'Approbation impossible : rôle, statut ou séparation des tâches'},409);
+  const eventId=crypto.randomUUID(),auditId=crypto.randomUUID();
+  // D1 batch executes as a transaction. The event and audit are created only
+  // when the conditional update changed exactly one draft.
+  const results=await db.batch([
+   db.prepare("UPDATE records_royalties SET status='approved',approved_by=?,approved_at=CURRENT_TIMESTAMP WHERE id=? AND status='draft' AND created_by<>?").bind(user.email,id,user.email),
+   db.prepare("INSERT INTO records_royalty_events(id,royalty_id,actor_email,event) SELECT ?,?,?,'draft_approved' WHERE changes()=1").bind(eventId,id,user.email),
+   db.prepare("INSERT INTO records_audit(id,actor_email,action,object_type,object_id) SELECT ?,?,'draft_approved','royalty',? WHERE EXISTS(SELECT 1 FROM records_royalty_events WHERE id=?)").bind(auditId,user.email,id,eventId)
+  ]);
+  if(!results[0]?.meta?.changes)return json({error:'Le relevé a déjà été modifié'},409);
+  return json({id,status:'approved',payment:'not_issued'});
+ }
  if(action==='royalties'){
-  if(!visible(role,['director','finance']))return deny();
+  if(!canCreateRoyalty(role))return deny();
   const artistId=str(data.artistId,80),reference=str(data.reference,100),currency=data.currency;
   const gross=data.grossCents,deductions=data.deductionsCents,points=data.basisPoints;
   if(!artistId||!reference||!['EUR','USD','GBP'].includes(currency)||!integer(gross,100000000000)||!integer(deductions,gross)||!integer(points,10000))
@@ -84,8 +103,8 @@ async function handler(context,method){
   if(!artist)return json({error:'Artiste introuvable'},404);
   const amount=calculateRoyalties(gross,deductions,points),id=crypto.randomUUID();
   await db.batch([
-   db.prepare('INSERT INTO records_royalties (id,artist_id,reference,currency,gross_cents,permitted_deductions_cents,basis_points,payable_cents) VALUES (?,?,?,?,?,?,?,?)')
-    .bind(id,artistId,reference,currency,gross,deductions,points,amount),
+   db.prepare('INSERT INTO records_royalties (id,artist_id,reference,currency,gross_cents,permitted_deductions_cents,basis_points,payable_cents,created_by) VALUES (?,?,?,?,?,?,?,?,?)')
+    .bind(id,artistId,reference,currency,gross,deductions,points,amount,user.email),
    log(db,user.email,'create_draft','royalty',id)
   ]);
   return json({id,status:'draft',payableCents:amount,currency},201);

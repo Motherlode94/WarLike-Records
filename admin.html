@@ -5,7 +5,9 @@
 <section class="grid" id="metrics"><div class="metric"><strong id="artistCount">—</strong><span>Dossiers artistes</span></div><div class="metric"><strong id="agreementCount">—</strong><span>Projets d'accords</span></div><div class="metric"><strong id="royaltyCount">—</strong><span>Relevés brouillons</span></div></section>
 <section class="panel" id="artistSection" hidden><h2>Dossiers artistes</h2><form id="artistForm"><label>Nom de scène / dossier<input name="name" maxlength="100" required autocomplete="off"></label><button type="submit">Créer un dossier privé</button></form><p class="note">Le dossier reste privé, il n'est pas publié dans le roster.</p><div class="scroller"><table><thead><tr><th>Nom</th><th>Étape</th><th>Identifiant</th></tr></thead><tbody id="artistRows"></tbody></table></div></section>
 <section class="panel" id="agreementSection" hidden><h2>Projets de contrats</h2><form id="agreementForm"><label>Artiste<select name="artistId" class="artistSelect" required></select></label><label>Type d'accord<select name="kind"><option value="recording">Enregistrement</option><option value="master_license">Licence de master</option><option value="distribution">Distribution</option><option value="development">Développement</option></select></label><button type="submit">Créer un brouillon</button></form><p class="note">Un brouillon ne constitue pas une signature. Aucune signature électronique n'est exécutée depuis cette page.</p><div class="scroller"><table><thead><tr><th>Artiste</th><th>Type</th><th>Statut</th></tr></thead><tbody id="agreementRows"></tbody></table></div></section>
-<section class="panel" id="royaltySection" hidden><h2>Comptabilité & royalties</h2><form id="royaltyForm"><label>Artiste<select name="artistId" class="artistSelect" required></select></label><label>Référence / période<input name="reference" maxlength="100" required></label><label>Devise<select name="currency"><option>EUR</option><option>USD</option><option>GBP</option></select></label><label>Recettes brutes (centimes)<input name="grossCents" type="number" min="0" step="1" required></label><label>Déductions autorisées (centimes)<input name="deductionsCents" type="number" min="0" step="1" value="0" required></label><label>Part artiste (%)<input name="percent" type="number" min="0" max="100" step=".01" value="50" required></label><button type="submit">Calculer et enregistrer</button></form><p class="note">Modèle simple : (recettes brutes − déductions autorisées) × part contractuelle. Un relevé reste un brouillon tant qu'il n'est pas approuvé. Ne constitue pas une facture ni un ordre de paiement.</p><div class="scroller"><table><thead><tr><th>Référence</th><th>Devise</th><th>Montant artiste</th><th>Statut</th></tr></thead><tbody id="royaltyRows"></tbody></table></div></section></div>
+<section class="panel" id="documentSection" hidden><h2>Contrats — coffre documentaire privé</h2><p class="note">PDF uniquement, 8 Mo maximum. Le document est conservé séparément dans R2 avec son empreinte SHA-256 ; il n'est pas signé par son dépôt.</p><form id="documentForm"><label>Contrat<select id="documentAgreement" name="agreementId" required></select></label><label>PDF original<input type="file" name="pdf" accept="application/pdf,.pdf" required></label><button type="submit">Déposer dans le coffre privé</button></form><p id="documentStatus" class="note" role="status"></p></section>
+<section class="panel" id="royaltySection" hidden><h2>Comptabilité & royalties</h2><form id="royaltyForm"><label>Artiste<select name="artistId" class="artistSelect" required></select></label><label>Référence / période<input name="reference" maxlength="100" required></label><label>Devise<select name="currency"><option>EUR</option><option>USD</option><option>GBP</option></select></label><label>Recettes brutes (centimes)<input name="grossCents" type="number" min="0" step="1" required></label><label>Déductions autorisées (centimes)<input name="deductionsCents" type="number" min="0" step="1" value="0" required></label><label>Part artiste (%)<input name="percent" type="number" min="0" max="100" step=".01" value="50" required></label><button type="submit">Calculer et enregistrer</button></form><p class="note">Modèle simple : (recettes brutes − déductions autorisées) × part contractuelle. Un relevé reste un brouillon tant qu'il n'est pas approuvé. Ne constitue pas une facture ni un ordre de paiement.</p><div class="scroller"><table><thead><tr><th>Référence</th><th>Devise</th><th>Montant artiste</th><th>Statut</th><th>Auteur</th></tr></thead><tbody id="royaltyRows"></tbody></table></div>
+<form id="approvalForm" hidden><label>Relevé à approuver (créé par un autre responsable)<select id="approvalSelect" name="id" required></select></label><button type="submit">Approuver le brouillon</button></form><p class="note">L'approbation n'exécute aucun paiement ; elle confirme seulement la validation interne du relevé. Le créateur ne peut jamais l'approuver lui-même.</p></section></div>
 </main><footer>WarLike Records · Administration soumise à autorisations nominatives · Aucune donnée privée dans les fichiers publics</footer>
 <script type="module">
 const $=id=>document.getElementById(id);
@@ -14,17 +16,27 @@ const addCell=(row,value)=>{const td=document.createElement('td');td.textContent
 const rows=(id,items,fields)=>{const host=$(id);host.replaceChildren();for(const item of items){const tr=document.createElement('tr');for(const field of fields)addCell(tr,field(item));host.append(tr)}};
 const choices=artists=>{for(const select of document.querySelectorAll('.artistSelect')){select.replaceChildren();for(const artist of artists){const option=document.createElement('option');option.value=artist.id;option.textContent=artist.stage_name;select.append(option)}}};
 const notify=value=>{$('status').textContent=value};
-let role,artists=[];
+let role,meEmail,artists=[];
 const refresh=async()=>{
  const summary=await response('dashboard');
  $('artistCount').textContent=summary.artists;$('agreementCount').textContent=summary.agreements;$('royaltyCount').textContent=summary.royalties;
  artists=(await response('artists')).items;
  rows('artistRows',artists,[x=>x.stage_name,x=>x.stage,x=>x.id]);choices(artists);
- if(['director','ar','production'].includes(role)){const a=(await response('agreements')).items;rows('agreementRows',a,[x=>artists.find(z=>z.id===x.artist_id)?.stage_name||x.artist_id,x=>x.kind,x=>x.status])}
- if(['director','finance'].includes(role)){const r=(await response('royalties')).items;rows('royaltyRows',r,[x=>x.reference,x=>x.currency,x=>(x.payable_cents/100).toFixed(2),x=>x.status])}
+ if(['director','ar','production'].includes(role)){
+  const a=(await response('agreements')).items;
+  rows('agreementRows',a,[x=>artists.find(z=>z.id===x.artist_id)?.stage_name||x.artist_id,x=>x.kind,x=>x.status]);
+  const select=$('documentAgreement');select.replaceChildren();for(const agreement of a){const option=document.createElement('option');option.value=agreement.id;option.textContent=(artists.find(z=>z.id===agreement.artist_id)?.stage_name||agreement.artist_id)+' / '+agreement.kind;select.append(option)}
+  const panel=$('documentSection');panel.hidden=!['director','production'].includes(role);panel.querySelector('button').disabled=!select.options.length;
+ }
+ if(['director','finance'].includes(role)){
+  const r=(await response('royalties')).items;
+  rows('royaltyRows',r,[x=>x.reference,x=>x.currency,x=>(x.payable_cents/100).toFixed(2),x=>x.status,x=>x.created_by]);
+  const form=$('approvalForm'),select=$('approvalSelect');form.hidden=role!=='director';select.replaceChildren();
+  if(role==='director'){for(const item of r.filter(x=>x.status==='draft'&&x.created_by!==meEmail)){const option=document.createElement('option');option.value=item.id;option.textContent=item.reference+' — '+item.currency+' '+(item.payable_cents/100).toFixed(2);select.append(option)}form.querySelector('button').disabled=!select.options.length}
+ }
 };
 try{
- const me=await response('me');role=me.role;$('userRole').hidden=false;$('userRole').textContent=me.email+' · '+role;
+ const me=await response('me');role=me.role;meEmail=me.email;$('userRole').hidden=false;$('userRole').textContent=me.email+' · '+role;
  if(!['director','ar','production','finance'].includes(role))throw Error('Ce tableau de bord ne donne pas accès aux comptes artistes');
  $('secure').hidden=false;
  $('artistSection').hidden=!['director','ar'].includes(role);
@@ -41,4 +53,25 @@ const send=(form,path,transform)=>form.addEventListener('submit',async e=>{
 send($('artistForm'),'artists',f=>({name:f.get('name')}));
 send($('agreementForm'),'agreements',f=>({artistId:f.get('artistId'),kind:f.get('kind')}));
 send($('royaltyForm'),'royalties',f=>({artistId:f.get('artistId'),reference:f.get('reference'),currency:f.get('currency'),grossCents:Number(f.get('grossCents')),deductionsCents:Number(f.get('deductionsCents')),basisPoints:Math.round(Number(f.get('percent'))*100)}));
+send($('approvalForm'),'royalty-approve',f=>({id:f.get('id')}));
+
+$('documentForm').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const form=event.currentTarget,button=form.querySelector('button[type=submit]');
+ const file=form.elements.pdf.files[0],agreementId=form.elements.agreementId.value;
+ if(!file||!agreementId)return;
+ if(file.size>8*1024*1024){$('documentStatus').textContent='Document trop volumineux (limite 8 Mo)';return}
+ button.disabled=true;
+ try{
+  const res=await fetch('/api/admin/document?agreementId='+encodeURIComponent(agreementId),{
+   method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/pdf','X-File-Name':file.name},body:file,cache:'no-store'
+  });
+  const data=await res.json();
+  if(!res.ok)throw new Error(data.error||'Dépôt impossible');
+  $('documentStatus').textContent='Document conservé (non signé). Identifiant : '+data.id+' · SHA-256 : '+data.sha256;
+  form.reset();
+ }catch(e){$('documentStatus').textContent=e.message||'Dépôt refusé'}
+ finally{button.disabled=false}
+});
+
 </script></body></html>
