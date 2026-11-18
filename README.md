@@ -35,6 +35,20 @@ La vision de WarLike Records est de relier création et autonomie : développer 
 
 Cette histoire est celle d'un projet en construction. Elle ne revendique **ni palmarès, ni artistes déjà signés, ni contrats, ni succès commerciaux non documentés**.
 
+## WarLike Records Admin — première fondation privée
+
+Une interface d'administration a été ajoutée dans cette branche à `/admin.html`, avec une API Cloudflare Pages Functions `/api/admin/*`, un schéma D1 privé et des contrôles de rôles.
+
+- **Dossiers artistes :** création privée, étapes de suivi et journal d'audit.
+- **Contrats :** création de brouillons avec distinction entre enregistrement, licence de masters, distribution et développement. **Aucune signature électronique effective n'est disponible.**
+- **Royalties :** brouillons de relevés par artiste avec montants en centimes, déductions autorisées et pourcentage contractuel ; aucun paiement n'est lancé.
+- **Authentification :** JWT Cloudflare Access vérifié cryptographiquement ; la session ne suffit pas sans rôle actif en D1.
+- **Sécurité :** en l'absence de configuration Access et D1, les API d'administration renvoient une erreur et ne livrent aucune donnée privée.
+
+**L'administration ne doit pas recevoir de données personnelles réelles avant la configuration et la validation de sécurité.**
+
+Documentation complète : [Configuration et limites de WarLike Records Admin](docs/PRIVATE_OPERATIONS.md).
+
 ## Vision
 
 WarLike Records a vocation à produire, accompagner et développer plusieurs artistes au sein du même label. Le portail central présente leur musique, leur actualité et les projets du label. Chaque artiste peut disposer d'un **sous-site ou d'un site dédié** avec ses propres photographies autorisées, sa biographie, son identité visuelle, ses sorties, ses clips et ses événements.

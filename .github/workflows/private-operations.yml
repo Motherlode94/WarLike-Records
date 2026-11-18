@@ -1,0 +1,21 @@
+name: WarLike Records private operations
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  secure-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify secure API syntax
+        run: |
+          node --check functions/_lib/access.js
+          node --check functions/_lib/royalties.js
+          node --check 'functions/api/admin/[action].js'
+      - name: Authentication and royalty tests
+        run: node --test tests/private-operations.test.mjs
